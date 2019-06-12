@@ -1,0 +1,24 @@
+{
+  "name": "bob-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "bookshelf": "^0.14.2",
+    "crypto-js": "^3.1.9-1",
+    "db-migrate": "^0.11.6",
+    "db-migrate-pg": "^1.0.0",
+    "dotenv": "^8.0.0",
+    "express": "^4.17.1",
+    "jade": "^1.11.0",
+    "knex": "^0.17.5",
+    "node-sass": "^4.12.0",
+    "pg": "^7.11.0"
+  }
+}
