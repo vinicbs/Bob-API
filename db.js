@@ -8,7 +8,7 @@ const knex = require('knex')({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASS,
-        database: 'bob',
+        database: process.env.DB_NAME,
         charset: 'utf8',
     }
 });
