@@ -102,6 +102,94 @@ router.post('/signup', function (req, res, next) {
     }
 })
 
+// URL: /users/signin
+// Method: GET
+// URL Params: [email, password]
+/*  Response:
+        Success:
+            data: {
+                token,
+                id,
+                email,
+                name,
+                phone
+            }
+        Error:
+            Missing fields: { errorCode: 1001 }
+            Error in query: { errorCode: 1003 }
+            Email or password incorrect: { errorCode: 1004 }
+*/
+// Token is not required
+router.get('/signin', function (req, res, next) {
+    if ((req.query.email == null) || (req.query.email == "") ||
+        (req.query.password == null) || (req.query.password == "")) {
+
+        var fields = '';
+        fields += ((req.query.email == null) || (req.query.email == "")) ? 'email' : '';
+        fields += ((req.query.password == null) || (req.query.password == "")) ? (fields.length > 0 ? ', ' : '') + 'password' : '';
+
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.LoginErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    }
+    else {
+        knex('users').where({
+            email: req.query.email
+        }).select().then(results => {
+            if (results.length > 0) {
+                var result = results[0];
+                //compares passwords
+                if (CryptoJS.AES.decrypt(result.password, process.env.PASSWORD_KEY).toString(CryptoJS.enc.Utf8) === req.query.password) {
+                    // Returns token created for user
+                    var token = useful.createToken(result.id);
+
+                    let response = {
+                        token: token,
+                        id: result.id,
+                        email: result.email,
+                        name: result.name,
+                        phone: result.phone
+                    }
+                    res.json({
+                        success: true,
+                        errorCode: errorsConstants.noError,
+                        data: response,
+                        message: 'Login OK.'
+                    });
+                }
+                else {
+                    res.status(500).json({
+                        success: false,
+                        errorCode: errorsConstants.LoginErrors.invalidEmailOrPassword,
+                        data: null,
+                        message: 'Invalid email or password.'
+                    });
+                }
+            }
+            else {
+                res.status(500).json({
+                    success: false,
+                    errorCode: errorsConstants.LoginErrors.invalidEmailOrPassword,
+                    data: null,
+                    message: 'Invalid email or password.'
+                });
+            }
+        })
+            .then(null, function (err) {
+                //query fail
+                res.status(500).json({
+                    success: false,
+                    errorCode: errorsConstants.LoginErrors.queryError,
+                    data: err,
+                    message: 'Error accessing information.'
+                });
+            });
+    }
+});
+
 module.exports = router;
 
 function validToken(req, res, next) {
