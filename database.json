@@ -5,6 +5,11 @@
         "password": {"ENV": "DB_PASS"},
         "host": {"ENV": "DB_HOST"},
         "database": {"ENV": "DB_NAME"},
-        "schema": "my_schema"
+        "addIfNotExists": {
+            "sslmode": "require"
+        },
+        "overwrite": {
+            "native": "true"
+          }
     }
 }
