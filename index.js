@@ -49,6 +49,6 @@ app.use(function (req, res, next) {
     res.json({ success: false, message: 'Route not found' });
 });
 
-app.listen(app.get('port'), () => {
+app.listen(process.env.PORT || app.get('port'), () => {
     console.log(`Bob API listening on port ${port}!`)
 })
