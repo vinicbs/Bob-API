@@ -37,6 +37,11 @@ exports.up = function(db) {
       type: 'string',
       notNull: true,
       length: 150
+    },
+    phone: {
+      type: 'string',
+      notNull: true,
+      length: 50
     }
   })
   return null;

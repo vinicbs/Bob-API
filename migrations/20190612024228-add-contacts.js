@@ -8,7 +8,7 @@ var seed;
   * We receive the dbmigrate dependency from dbmigrate initially.
   * This enables us to not have to rely on NODE_PATH.
   */
-exports.setup = function (options, seedLink) {
+exports.setup = function(options, seedLink) {
   dbm = options.dbmigrate;
   type = dbm.dataType;
   seed = seedLink;
@@ -23,20 +23,20 @@ exports.up = function (db) {
       primaryKey: true,
       autoIncrement: true
     },
-    user_id:
+    device_id:
     {
       type: 'int',
       unsigned: true,
       notNull: true,
       foreignKey: {
-        name: 'contacts_users_id_fk',
-        table: 'users',
+        name: 'contacts_devices_id_fk',
+        table: 'devices',
         rules: {
           onDelete: 'CASCADE',
           onUpdate: 'RESTRICT'
         },
         mapping: {
-          user_id: 'id'
+          device_id: 'id'
         }
       }
     },
@@ -67,7 +67,6 @@ exports.down = function (db) {
   db.dropTable('contacts')
   return null;
 };
-
 exports._meta = {
   "version": 1
 };
