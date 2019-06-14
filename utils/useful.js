@@ -10,7 +10,7 @@ function createToken(userId)
 // Validates user token
 function validToken(token, callback) 
 {
-    jwt.verify(token, config.superSecret, function (err, decoded) {
+    jwt.verify(token, process.env.TOKEN_KEY, function (err, decoded) {
         if (err) {
             callback(null, false);
         } else {
@@ -21,11 +21,11 @@ function validToken(token, callback)
 }
 
 // Get user ID on token
-function getAppUserIdInToken(token) {
+function getUserIdInToken(token) {
     
     var result = '';
     try {
-        result = jwt.verify(token, config.superSecret).data;
+        result = jwt.verify(token, process.env.TOKEN_KEY).data;
     }
     catch (err) { }
 
@@ -35,5 +35,5 @@ function getAppUserIdInToken(token) {
 module.exports = {
     createToken         : createToken,
     validToken          : validToken,
-    getAppUserIdInToken : getAppUserIdInToken
+    getUserIdInToken    : getUserIdInToken
 };

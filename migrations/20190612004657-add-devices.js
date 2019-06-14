@@ -47,6 +47,7 @@ exports.up = function(db) {
     },
     imei: {
       type: 'string',
+      unique: true,
       notNull: true,
       length: 150
     }

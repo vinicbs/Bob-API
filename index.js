@@ -8,6 +8,7 @@ const port = 3000
 
 //Routes
 const users = require('./routes/users')
+const devices = require('./routes/devices')
 
 
 app.use(bodyParser.json());
@@ -43,6 +44,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/users', users);
+app.use('/devices', devices);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

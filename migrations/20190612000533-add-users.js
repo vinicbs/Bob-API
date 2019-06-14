@@ -30,6 +30,7 @@ exports.up = function(db) {
     },
     email: {
       type: 'string',
+      unique: true,
       notNull: true,
       length: 150
     },
