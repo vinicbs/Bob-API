@@ -9,7 +9,7 @@ const port = 3000
 //Routes
 const users = require('./routes/users')
 const devices = require('./routes/devices')
-
+const contacts = require('./routes/contacts')
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
@@ -43,8 +43,10 @@ app.get('/', (req, res) => {
     res.render('index', { title: 'Bob API', description: 'Welcome to Bob API' });
 })
 
+// Routes
 app.use('/users', users);
 app.use('/devices', devices);
+app.use('/contacts', contacts);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

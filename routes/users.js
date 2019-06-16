@@ -41,6 +41,7 @@ router.post('/signup', function (req, res, next) {
         fields += ((req.body.password == null) || (req.body.password == "")) ? (fields.length > 0 ? ', ' : '') + 'password' : '';
         fields += ((req.body.name == null) || (req.body.name == "")) ? (fields.length > 0 ? ', ' : '') + 'name' : '';
         fields += ((req.body.phone == null) || (req.body.phone == "")) ? (fields.length > 0 ? ', ' : '') + 'phone' : '';
+        fields += ((req.body.country == null) || (req.body.country == "")) ? (fields.length > 0 ? ', ' : '') + 'country' : '';
 
         res.json({
             success: false,
@@ -67,7 +68,8 @@ router.post('/signup', function (req, res, next) {
                         email: req.body.email,
                         password: CryptoJS.AES.encrypt(req.body.password, process.env.PASSWORD_KEY).toString(),
                         name: req.body.name,
-                        phone: req.body.phone
+                        phone: req.body.phone,
+                        country: req.body.country
                     }).then(id => {
                         // return user token
                         var token = useful.createToken(id[0]);
@@ -81,11 +83,12 @@ router.post('/signup', function (req, res, next) {
                     })
                     .catch(function (err) {
                         //query fail
+                        console.log(err)
                         res.status(500).json({
                             success: false,
                             errorCode: errorsConstants.LoginErrors.queryError,
                             data: err,
-                            message: 'Error accessing information.'
+                            message: 'Error accessing information 1.'
                         });
                     });
             }
@@ -96,7 +99,7 @@ router.post('/signup', function (req, res, next) {
                     success: false,
                     errorCode: errorsConstants.LoginErrors.queryError,
                     data: err,
-                    message: 'Error accessing information.'
+                    message: 'Error accessing information 2.'
                 });
             });
     }

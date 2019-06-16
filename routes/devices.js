@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 var errorsConstants = require('../utils/errorsConstants')
-var CryptoJS = require("crypto-js")
 var useful = require('../utils/useful')
 
 var DB = require('../db').DB,
@@ -15,7 +14,6 @@ var DB = require('../db').DB,
         id: int [dont send for update]
         name: string
         imei: string
-        user_id: int
     }
 */
 /*  Response:
@@ -28,6 +26,7 @@ var DB = require('../db').DB,
             Error in query:     { errorCode: 2003 }
 */
 router.post('/save', validToken, function (req, res, next) {
+    var userId = useful.getUserIdInToken(req.headers['x-access-token']);
     if ((req.body.id == null) || (req.body.id == '')) {
         if ((req.body.name == null) || (req.body.name == "") || (req.body.imei == null) || (req.body.imei == "")) {
 
@@ -43,7 +42,7 @@ router.post('/save', validToken, function (req, res, next) {
             });
         } else {
             knex.insert({
-                name: req.body.name, user_id: req.body.user_id, imei: req.body.imei
+                name: req.body.name, user_id: userId, imei: req.body.imei
             }).returning('id').into('devices').then(function (id) {
                 res.json({
                     success: true,
@@ -65,10 +64,9 @@ router.post('/save', validToken, function (req, res, next) {
 
             var name = (((req.body.name == null) || (req.body.name == "")) ? result[0].name : req.body.name);
             var imei = (((req.body.imei == null) || (req.body.imei == "")) ? result[0].imei : req.body.imei);
-            var user_id = (((req.body.user_id == null) || (req.body.user_id == "")) ? result[0].user_id : req.body.user_id);
             knex('devices')
                 .where('id', '=', req.body.id)
-                .update({ name: name, imei: imei, user_id: user_id }).then(function (count) {
+                .update({ name: name, imei: imei, user_id: userId }).then(function (count) {
                     res.json({
                         success: true,
                         errorCode: errorsConstants.noError,
@@ -137,7 +135,6 @@ router.get('/list', validToken, function (req, res, next) {
                     });
 
                 }).then(null, function (err) {
-                    console.log(err)
                     res.status(500).json({
                         success: false,
                         errorCode: errorsConstants.DevicesErrors.queryError,
