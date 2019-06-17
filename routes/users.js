@@ -55,7 +55,7 @@ router.post('/signup', function (req, res, next) {
             email: req.body.email
         }).select('password').then(results => {
             if (results.length > 0) {
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.LoginErrors.emailInUse,
                     data: null,
@@ -84,7 +84,7 @@ router.post('/signup', function (req, res, next) {
                     .catch(function (err) {
                         //query fail
                         console.log(err)
-                        res.status(500).json({
+                        res.json({
                             success: false,
                             errorCode: errorsConstants.LoginErrors.queryError,
                             data: err,
@@ -95,7 +95,7 @@ router.post('/signup', function (req, res, next) {
         })
             .then(null, function (err) {
                 //query fail
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.LoginErrors.queryError,
                     data: err,
@@ -131,7 +131,7 @@ router.get('/signin', function (req, res, next) {
         fields += ((req.query.email == null) || (req.query.email == "")) ? 'email' : '';
         fields += ((req.query.password == null) || (req.query.password == "")) ? (fields.length > 0 ? ', ' : '') + 'password' : '';
 
-        res.status(500).json({
+        res.json({
             success: false,
             errorCode: errorsConstants.LoginErrors.missingFields,
             data: null,
@@ -164,7 +164,7 @@ router.get('/signin', function (req, res, next) {
                     });
                 }
                 else {
-                    res.status(500).json({
+                    res.json({
                         success: false,
                         errorCode: errorsConstants.LoginErrors.invalidEmailOrPassword,
                         data: null,
@@ -173,7 +173,7 @@ router.get('/signin', function (req, res, next) {
                 }
             }
             else {
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.LoginErrors.invalidEmailOrPassword,
                     data: null,
@@ -183,7 +183,7 @@ router.get('/signin', function (req, res, next) {
         })
             .then(null, function (err) {
                 //query fail
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.LoginErrors.queryError,
                     data: err,
@@ -192,6 +192,50 @@ router.get('/signin', function (req, res, next) {
             });
     }
 });
+
+// URL: /users/verifyToken
+// Method: GET
+// URL Params: [token]
+/*  Response:
+        Success:
+            data: {
+                token
+            }
+        Error:
+            Missing fields: { errorCode: 1001 }
+            Error in query: { errorCode: 1003 }
+*/
+router.get('/verifyToken', function (req, res, next) {
+    if ((req.query.token == null) || req.query.token == '') {
+        res.json({
+            success: false,
+            errorCode: errorsConstants.LoginErrors.missingFields,
+            data: null,
+            message: 'Does not have a token'
+        });
+    }
+    else {
+        useful.validToken(req.query.token, function (err, result) {
+            let response = {
+                token: req.query.token
+            }
+            if (result)
+                res.json({
+                    success: true,
+                    errorCode: errorsConstants.noError,
+                    data: response,
+                    message: 'Token is ok'
+                })
+            else
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.LoginErrors.failedAuthentication,
+                    data: null,
+                    message: 'Failed to authenticate token.'
+                });
+        })
+    }
+})
 
 module.exports = router;
 

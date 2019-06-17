@@ -6,6 +6,7 @@ module.exports = Object.freeze({
         emailInUse: 1002,
         queryError: 1003,
         invalidEmailOrPassword: 1004,
+        failedAuthentication: 1005
     },
     DevicesErrors: {
         missingFields: 2001,
