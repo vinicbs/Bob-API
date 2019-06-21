@@ -219,6 +219,95 @@ router.get('/delete', validToken, function (req, res, next) {
     }
 })
 
+
+// URL: /devices/keepalive
+// Method: POST
+// URL Params: []
+/*  Body:
+    {
+        imei: string
+        day: int
+        month: int
+        year: int
+        hour: int
+        minutes: int
+        timezone: int
+        latitude: float
+        longitude: float
+        height: float (in degrees to the north)
+        direction: float ()
+        speed: float (km/h)
+        number_satellites: int
+    }
+*/
+/*  Response:
+        Success:
+            data: {
+                id
+            }
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.post('/keepalive', validToken, function (req, res, next) {
+    if (((req.body.imei == null) || (req.body.imei == "")) ||
+        ((req.body.latitude == null) || (req.body.latitude == "")) ||
+        ((req.body.longitude == null) || (req.body.longitude == ""))) {
+
+        var fields = '';
+        fields += ((req.body.imei == null) || (req.body.imei == "")) ? 'imei, ' : '';
+        fields += ((req.body.latitude == null) || (req.body.latitude == "")) ? 'latitude, ' : '';
+        fields += ((req.body.longitude == null) || (req.body.longitude == "")) ? 'longitude' : '';
+
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.DevicesErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else {
+        var query = knex('devices').select('id')
+            .where('imei', '=', req.body.imei)
+            .limit(1);
+        query.then(function (results) {
+            if (results.length === 0) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.DevicesErrors.deviceNotFound,
+                    data: null,
+                    message: 'Device not found'
+                });
+            } else {
+                var timezone = (((req.body.timezone == null) || (req.body.timezone == "")) ? 0 : req.body.timezone);
+                var height = (((req.body.height == null) || (req.body.height == "")) ? "" : req.body.height);
+                var direction = (((req.body.direction == null) || (req.body.direction == "")) ? "" : req.body.direction);
+                var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
+                var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
+
+                knex.insert({
+                    device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,
+                    timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites
+                }).returning('id').into('devices_history').then(function (id) {
+                    res.json({
+                        success: true,
+                        errorCode: errorsConstants.noError,
+                        data: id[0],
+                        message: 'Alive.'
+                    });
+                }).catch(function (err) {
+                    res.status(500).json({
+                        success: false,
+                        errorCode: errorsConstants.DevicesErrors.queryError,
+                        data: err,
+                        message: 'Error creating device history'
+                    });
+                })
+            }
+        });
+    }
+})
+
+
 module.exports = router;
 
 function validToken(req, res, next) {

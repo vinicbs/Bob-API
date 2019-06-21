@@ -15,7 +15,7 @@ exports.setup = function (options, seedLink) {
 };
 
 exports.up = function (db) {
-	db.createTable('users', {
+	db.createTable('devices_history', {
 		id: {
 			type: 'int',
 			unsigned: true,
@@ -23,43 +23,50 @@ exports.up = function (db) {
 			primaryKey: true,
 			autoIncrement: true
 		},
-		name: {
+		device_id:
+		{
+			type: 'int',
+			unsigned: true,
+			notNull: true,
+			foreignKey: {
+				name: 'devices_history_devices_id_fk',
+				table: 'devices',
+				rules: {
+					onDelete: 'CASCADE',
+					onUpdate: 'RESTRICT'
+				},
+				mapping: {
+					device_id: 'id'
+				}
+			}
+		},
+		latitude: {
 			type: 'string',
 			notNull: true,
 			length: 150
 		},
-		email: {
-			type: 'string',
-			unique: true,
-			notNull: true,
-			length: 150
-		},
-		password: {
+		longitude: {
 			type: 'string',
 			notNull: true,
 			length: 150
 		},
-		country: {
-			type: 'string',
-			notNull: true,
-			length: 150
-		},
-		state: {
+		height: {
 			type: 'string',
 			length: 150
 		},
-		city: {
+		direction: {
 			type: 'string',
 			length: 150
 		},
-		address: {
+		speed: {
 			type: 'string',
 			length: 150
 		},
-		phone: {
-			type: 'string',
-			notNull: true,
-			length: 50
+		number_satellites: {
+			type: 'int',
+		},
+		timezone: {
+			type: 'int',
 		},
 		created_at: {
 			type: 'timestamp',
@@ -71,7 +78,7 @@ exports.up = function (db) {
 };
 
 exports.down = function (db) {
-	db.dropTable('users')
+	db.dropTable('devices_history')
 	return null;
 };
 
