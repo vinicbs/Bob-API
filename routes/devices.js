@@ -249,7 +249,7 @@ router.get('/delete', validToken, function (req, res, next) {
             Missing fields:     { errorCode: 2001 }
             Error in query:     { errorCode: 2003 }
 */
-router.post('/keepalive', validToken, function (req, res, next) {
+router.post('/keepalive', function (req, res, next) {
     if (((req.body.imei == null) || (req.body.imei == "")) ||
         ((req.body.latitude == null) || (req.body.latitude == "")) ||
         ((req.body.longitude == null) || (req.body.longitude == ""))) {
@@ -336,7 +336,7 @@ router.post('/keepalive', validToken, function (req, res, next) {
             Missing fields:     { errorCode: 2001 }
             Error in query:     { errorCode: 2003 }
 */
-router.post('/beep', validToken, function (req, res, next) {
+router.post('/beep', function (req, res, next) {
     if (((req.body.imei == null) || (req.body.imei == "")) ||
         ((req.body.latitude == null) || (req.body.latitude == "")) ||
         ((req.body.longitude == null) || (req.body.longitude == ""))) {
