@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var errorsConstants = require('../utils/errorsConstants')
 var useful = require('../utils/useful')
+var zapi = require('@zenvia/zenvia-sms-core').api;
 
 var DB = require('../db').DB,
     knex = DB.knex;
@@ -370,6 +371,33 @@ router.post('/beep', function (req, res, next) {
                 var direction = (((req.body.direction == null) || (req.body.direction == "")) ? "" : req.body.direction);
                 var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
                 var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
+
+                zapi.setCredentials(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS);
+
+                knex('contacts').select('*')
+                    .where('device_id', '=', results[0].id)
+                    .then(function (contacts) {
+                        contacts.forEach(contact => {
+                            zapi.sendSMS({
+                                sendSmsRequest: {
+                                    from: "Botão do Bem",
+                                    to: contact.phone,
+                                    schedule: null,
+                                    msg: "Olá, " + contact.name + ", estou em perigo: \n https://bob-panel-dev.herokuapp.com/",
+                                    callbackOption: "ALL",
+                                }
+                            })
+                                .then((res) => {
+                                    console.log(res);
+                                })
+                                .catch((err) => {
+                                    console.error(err);
+                                });
+                        });
+
+                    })
+
+
 
                 knex.insert({
                     device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,

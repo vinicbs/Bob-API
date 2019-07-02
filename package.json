@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@zenvia/zenvia-sms-core": "^0.1.0",
     "body-parser": "^1.19.0",
     "bookshelf": "^0.14.2",
     "crypto-js": "^3.1.9-1",
@@ -22,6 +23,7 @@
     "morgan": "^1.9.1",
     "node-sass": "^4.12.0",
     "pg": "^7.11.0",
-    "pg-native": "^3.0.0"
+    "pg-native": "^3.0.0",
+    "zenvia-api": "^1.0.4"
   }
 }
