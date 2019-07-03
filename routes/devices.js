@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var errorsConstants = require('../utils/errorsConstants')
 var useful = require('../utils/useful')
-var zapi = require('@zenvia/zenvia-sms-core').api;
+let zenvia = require("zenvia-api").sendOne;
 
 var DB = require('../db').DB,
     knex = DB.knex;
@@ -221,6 +221,8 @@ router.get('/delete', validToken, function (req, res, next) {
 })
 
 
+//### KEEPALIVE ###
+
 // URL: /devices/keepalive
 // Method: POST
 // URL Params: []
@@ -308,6 +310,104 @@ router.post('/keepalive', function (req, res, next) {
     }
 })
 
+// URL: /devices/keepalive/list
+// Method: GET
+// URL Params: [pageSize, page, imei]
+/*  Response:
+        Success:
+            data: array list of devices_history objects
+            total: int
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Device not found:   { errorCode: 2002 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.get('/keepalive/list', validToken, function (req, res, next) {
+    var pageSize = ((req.query.pageSize == null) ? 10 : req.query.pageSize);
+    var page = ((req.query.page == null) ? 1 : req.query.page);
+    if ((req.query.imei == null) || (req.query.imei == "")) {
+
+        var fields = '';
+        fields += ((req.query.imei == null) || (req.query.imei == "")) ? 'imei' : '';
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.DevicesErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else {
+        var query = knex('devices').select('id')
+            .where('imei', '=', req.query.imei)
+            .limit(1);
+        query.then(function (devices) {
+            if (devices.length === 0) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.DevicesErrors.deviceNotFound,
+                    data: null,
+                    message: 'Device not found'
+                });
+            } else {
+                var deviceId = devices[0].id;
+                var queryTotal = knex.select(knex.raw('count(*) total')).from('devices_history');
+
+                queryTotal.then(function (resultTotal) {
+                    var total = parseInt(resultTotal[0].total);
+                    if ((req.query.total != null) && (req.query.total != '')) {
+                        res.json({ success: true, total: total });
+                    }
+                    else {
+                        if (total > 0) {
+                            var query = knex('devices_history').select('*')
+                                .where('device_id', '=', deviceId)
+                                .orderBy('devices_history.id', 'desc')
+                                .limit(pageSize)
+                                .offset(pageSize * (page - 1));
+
+                            query.then(function (results) {
+                                res.json({
+                                    success: true,
+                                    errorCode: errorsConstants.noError,
+                                    pageSize: pageSize,
+                                    total: total,
+                                    data: results,
+                                    message: 'Return OK.'
+                                });
+
+                            }).then(null, function (err) {
+                                res.status(500).json({
+                                    success: false,
+                                    errorCode: errorsConstants.DevicesErrors.queryError,
+                                    data: err,
+                                    message: 'Error accessing information.'
+                                });
+                            });
+                        } else {
+
+                            res.json({
+                                success: true,
+                                errorCode: errorsConstants.noError,
+                                pageSize: pageSize,
+                                total: 0,
+                                data: [],
+                                message: 'Return OK.'
+                            });
+                        }
+
+                    }
+                }).then(null, function (err) {
+                    res.status(500).json({
+                        success: false,
+                        errorCode: errorsConstants.DevicesErrors.queryError,
+                        data: err,
+                        message: 'Error accessing information.'
+                    });
+                });
+            }
+        });
+    }
+});
+
 // URL: /devices/beep
 // Method: POST
 // URL Params: []
@@ -335,6 +435,7 @@ router.post('/keepalive', function (req, res, next) {
             }
         Error:
             Missing fields:     { errorCode: 2001 }
+            Device not found:   { errorCode: 2002 }
             Error in query:     { errorCode: 2003 }
 */
 router.post('/beep', function (req, res, next) {
@@ -372,21 +473,17 @@ router.post('/beep', function (req, res, next) {
                 var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
                 var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
 
-                zapi.setCredentials(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS);
-
                 knex('contacts').select('*')
                     .where('device_id', '=', results[0].id)
                     .then(function (contacts) {
                         contacts.forEach(contact => {
-                            zapi.sendSMS({
-                                sendSmsRequest: {
-                                    from: "Botão do Bem",
-                                    to: contact.phone,
-                                    schedule: null,
-                                    msg: "Olá, " + contact.name + ", estou em perigo: \n https://bob-panel-dev.herokuapp.com/",
-                                    callbackOption: "ALL",
-                                }
-                            })
+                            let body = {
+                                "from": "Botão do Bem",
+                                "to": contact.phone,
+                                "msg": "Olá, " + contact.name + ", estou em perigo: \n https://bob-panel-dev.herokuapp.com/",
+                                "callbackOption": "NONE",
+                            };
+                            zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
                                 .then((res) => {
                                     console.log(res);
                                 })
@@ -396,8 +493,6 @@ router.post('/beep', function (req, res, next) {
                         });
 
                     })
-
-
 
                 knex.insert({
                     device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,
@@ -421,7 +516,103 @@ router.post('/beep', function (req, res, next) {
         });
     }
 })
+// URL: /devices/beep/list
+// Method: GET
+// URL Params: [pageSize, page, imei]
+/*  Response:
+        Success:
+            data: array list of devices_beeps objects
+            total: int
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Device not found:   { errorCode: 2002 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.get('/beep/list', validToken, function (req, res, next) {
+    var pageSize = ((req.query.pageSize == null) ? 10 : req.query.pageSize);
+    var page = ((req.query.page == null) ? 1 : req.query.page);
+    if ((req.query.imei == null) || (req.query.imei == "")) {
 
+        var fields = '';
+        fields += ((req.query.imei == null) || (req.query.imei == "")) ? 'imei' : '';
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.DevicesErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else {
+        var query = knex('devices').select('id')
+            .where('imei', '=', req.query.imei)
+            .limit(1);
+        query.then(function (devices) {
+            if (devices.length === 0) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.DevicesErrors.deviceNotFound,
+                    data: null,
+                    message: 'Device not found'
+                });
+            } else {
+                var deviceId = devices[0].id;
+                var queryTotal = knex.select(knex.raw('count(*) total')).from('devices_beeps');
+
+                queryTotal.then(function (resultTotal) {
+                    var total = parseInt(resultTotal[0].total);
+                    if ((req.query.total != null) && (req.query.total != '')) {
+                        res.json({ success: true, total: total });
+                    }
+                    else {
+                        if (total > 0) {
+                            var query = knex('devices_beeps').select('*')
+                                .where('device_id', '=', deviceId)
+                                .orderBy('devices_beeps.id', 'desc')
+                                .limit(pageSize)
+                                .offset(pageSize * (page - 1));
+
+                            query.then(function (results) {
+                                res.json({
+                                    success: true,
+                                    errorCode: errorsConstants.noError,
+                                    pageSize: pageSize,
+                                    total: total,
+                                    data: results,
+                                    message: 'Return OK.'
+                                });
+
+                            }).then(null, function (err) {
+                                res.status(500).json({
+                                    success: false,
+                                    errorCode: errorsConstants.DevicesErrors.queryError,
+                                    data: err,
+                                    message: 'Error accessing information.'
+                                });
+                            });
+                        } else {
+
+                            res.json({
+                                success: true,
+                                errorCode: errorsConstants.noError,
+                                pageSize: pageSize,
+                                total: 0,
+                                data: [],
+                                message: 'Return OK.'
+                            });
+                        }
+
+                    }
+                }).then(null, function (err) {
+                    res.status(500).json({
+                        success: false,
+                        errorCode: errorsConstants.DevicesErrors.queryError,
+                        data: err,
+                        message: 'Error accessing information.'
+                    });
+                });
+            }
+        });
+    }
+});
 
 module.exports = router;
 
