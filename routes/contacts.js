@@ -42,7 +42,7 @@ router.post('/save', validToken, function (req, res, next) {
             fields += ((req.body.message == null) || (req.body.message == "")) ? 'message' : '';
             fields += ((req.body.phone == null) || (req.body.phone == "")) ? 'phone' : '';
 
-            res.status(500).json({
+            res.json({
                 success: false,
                 errorCode: errorsConstants.ContactsErrors.missingFields,
                 data: null,
@@ -60,7 +60,7 @@ router.post('/save', validToken, function (req, res, next) {
                     message: 'Contact added.'
                 });
             }).catch(function (err) {
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.ContactsErrors.queryError,
                     data: err,
@@ -86,7 +86,7 @@ router.post('/save', validToken, function (req, res, next) {
                         message: 'Device updated.'
                     });
                 }).catch(function (err) {
-                    res.status(500).json({
+                    res.json({
                         success: false,
                         errorCode: errorsConstants.ContactsErrors.queryError,
                         data: err,
@@ -94,7 +94,7 @@ router.post('/save', validToken, function (req, res, next) {
                     });
                 });
         }).then(null, function (err) {
-            res.status(500).json({
+            res.json({
                 success: false,
                 errorCode: errorsConstants.ContactsErrors.queryError,
                 data: err,
@@ -124,7 +124,7 @@ router.get('/list', validToken, function (req, res, next) {
 
     // If query doesn't include device_id, return error msg
     if ((req.query.device_id == null) || (req.query.device_id == 0)) {
-        res.status(500).json({
+        res.json({
             success: false,
             errorCode: errorsConstants.ContactsErrors.missingFields,
             data: null,
@@ -156,7 +156,7 @@ router.get('/list', validToken, function (req, res, next) {
                     message: 'Return OK.'
                 });
             }).catch(function (err) {
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.ContactsErrors.queryError,
                     data: err,
@@ -172,7 +172,77 @@ router.get('/list', validToken, function (req, res, next) {
             });
         }
     }).catch(function (err) {
-        res.status(500).json({
+        res.json({
+            success: false,
+            errorCode: errorsConstants.ContactsErrors.queryError,
+            data: err,
+            message: 'Error accessing information.'
+        });
+    });
+});
+
+// URL: /contacts/list/all
+// Method: GET
+// URL Params: [device_id]
+/*  Response:
+        Success:
+            data: array list of contacts objects
+            total: int
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.get('/list/all', validToken, function (req, res, next) {
+    console.log('oi')
+    var userId = useful.getUserIdInToken(req.headers['x-access-token']);
+    // If query doesn't include device_id, return error msg
+    if ((req.query.device_id == null) || (req.query.device_id == 0)) {
+        res.json({
+            success: false,
+            errorCode: errorsConstants.ContactsErrors.missingFields,
+            data: null,
+            message: 'Required field have not been entered. Fields: device_id'
+        });
+    }
+    var deviceId = req.query.device_id;
+
+    // Check if device_id in query exists in user_id provided by the token
+    var query = knex('devices').count()
+        .where('user_id', '=', userId)
+        .where('id', '=', deviceId);
+    query.then(function (results) {
+        var count = results[0].count;
+
+        if (count > 0) {
+            var query = knex('contacts').select('*')
+                .where('device_id', '=', deviceId)
+                .orderBy('contacts.id', 'desc')
+
+            query.then(function (results) {
+                res.json({
+                    success: true,
+                    errorCode: errorsConstants.noError,
+                    data: results,
+                    message: 'Return OK.'
+                });
+            }).catch(function (err) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.ContactsErrors.queryError,
+                    data: err,
+                    message: 'Error accessing information.'
+                });
+            });
+        } else {
+            res.json({
+                success: false,
+                errorCode: errorsConstants.ContactsErrors.deviceNotFound,
+                data: null,
+                message: 'Device not found.'
+            });
+        }
+    }).catch(function (err) {
+        res.json({
             success: false,
             errorCode: errorsConstants.ContactsErrors.queryError,
             data: err,
@@ -197,7 +267,7 @@ router.get('/delete', validToken, function (req, res, next) {
 
     if ((req.query.id == null) || (req.query.id == "")) {
 
-        res.status(500).json({
+        res.json({
             success: false,
             errorCode: errorsConstants.ContactsErrors.missingFields,
             data: null,
@@ -223,7 +293,7 @@ router.get('/delete', validToken, function (req, res, next) {
                             .where('id', '=', req.query.id)
                             .del().then(function (count) {
                                 if (count === 0) {
-                                    res.status(500).json({
+                                    res.json({
                                         success: false,
                                         errorCode: errorsConstants.ContactsErrors.contactNotFound,
                                         data: null,
@@ -238,7 +308,7 @@ router.get('/delete', validToken, function (req, res, next) {
                                     });
                                 }
                             }).catch(function (err) {
-                                res.status(500).json({
+                                res.json({
                                     success: false,
                                     errorCode: errorsConstants.ContactsErrors.queryError,
                                     data: err,
@@ -256,7 +326,7 @@ router.get('/delete', validToken, function (req, res, next) {
                 })
             }
         }).catch(function (err) {
-            res.status(500).json({
+            res.json({
                 success: false,
                 errorCode: errorsConstants.ContactsErrors.contactNotFound,
                 data: err,

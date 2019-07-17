@@ -40,6 +40,11 @@ exports.up = function(db) {
 				}
 			}
 		},
+		beeped: {
+			type: 'int',
+			notNull: true,
+			defaultValue: 0
+		},
 		latitude: {
 			type: 'string',
 			notNull: true,

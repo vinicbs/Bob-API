@@ -35,7 +35,7 @@ router.post('/save', validToken, function (req, res, next) {
             fields += ((req.body.name == null) || (req.body.name == "")) ? 'name' : '';
             fields += ((req.body.imei == null) || (req.body.imei == "")) ? 'imei' : '';
 
-            res.status(500).json({
+            res.json({
                 success: false,
                 errorCode: errorsConstants.DevicesErrors.missingFields,
                 data: null,
@@ -52,7 +52,7 @@ router.post('/save', validToken, function (req, res, next) {
                     message: 'Device added.'
                 });
             }).catch(function (err) {
-                res.status(500).json({
+                res.json({
                     success: false,
                     errorCode: errorsConstants.DevicesErrors.queryError,
                     data: err,
@@ -75,7 +75,7 @@ router.post('/save', validToken, function (req, res, next) {
                         message: 'Device updated.'
                     });
                 }).catch(function (err) {
-                    res.status(500).json({
+                    res.json({
                         success: false,
                         errorCode: errorsConstants.DevicesErrors.queryError,
                         data: err,
@@ -83,7 +83,7 @@ router.post('/save', validToken, function (req, res, next) {
                     });
                 });
         }).then(null, function (err) {
-            res.status(500).json({
+            res.json({
                 success: false,
                 errorCode: errorsConstants.DevicesErrors.queryError,
                 data: err,
