@@ -40,7 +40,7 @@ exports.up = function(db) {
 				}
 			}
 		},
-		beeped: {
+		pressed_button: {
 			type: 'int',
 			notNull: true,
 			defaultValue: 0

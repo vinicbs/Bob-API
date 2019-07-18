@@ -426,6 +426,7 @@ router.get('/keepalive/list', validToken, function (req, res, next) {
         direction: float ()
         speed: float (km/h)
         number_satellites: int
+        pressed_button: int
     }
 */
 /*  Response:
@@ -472,46 +473,48 @@ router.post('/beep', function (req, res, next) {
                 var direction = (((req.body.direction == null) || (req.body.direction == "")) ? "" : req.body.direction);
                 var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
                 var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
+                var pressed_button = (((req.body.pressed_button == null) || (req.body.pressed_button == "")) ? 0 : req.body.pressed_button);
 
                 knex('contacts').select('*')
                     .where('device_id', '=', results[0].id)
                     .then(function (contacts) {
-                        contacts.forEach(contact => {
-                            let body = {
-                                "from": "Botão do Bem",
-                                "to": contact.phone,
-                                "msg": "Olá, " + contact.name + ", estou em perigo: \n https://bob-panel-dev.herokuapp.com/",
-                                "callbackOption": "NONE",
-                            };
-                            zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
-                                .then((res) => {
-                                    console.log(res);
-                                })
-                                .catch((err) => {
-                                    console.error(err);
-                                });
-                        });
-
+                        if (pressed_button == 1) {
+                            contacts.forEach(contact => {
+                                let body = {
+                                    "from": "Botão do Bem",
+                                    "to": contact.phone,
+                                    "msg": "Olá, " + contact.name + ", estou em perigo: \n https://bob-web-stag.herokuapp.com/ \n" + contact.message,
+                                    "callbackOption": "NONE",
+                                };
+                                zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
+                                    .then((smsResponse) => {
+                                        console.log(smsResponse);
+                                    })
+                                    .catch((err) => {
+                                        console.error(err);
+                                    });
+                            });
+                        }
+                        knex.insert({
+                            device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,
+                            timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites,
+                            pressed_button: pressed_button
+                        }).returning('id').into('devices_beeps').then(function (id) {
+                            res.json({
+                                success: true,
+                                errorCode: errorsConstants.noError,
+                                data: id[0],
+                                message: 'Beep'
+                            });
+                        }).catch(function (err) {
+                            res.status(500).json({
+                                success: false,
+                                errorCode: errorsConstants.DevicesErrors.queryError,
+                                data: err,
+                                message: 'Error creating device beep'
+                            });
+                        })
                     })
-
-                knex.insert({
-                    device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,
-                    timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites
-                }).returning('id').into('devices_beeps').then(function (id) {
-                    res.json({
-                        success: true,
-                        errorCode: errorsConstants.noError,
-                        data: id[0],
-                        message: 'Beep'
-                    });
-                }).catch(function (err) {
-                    res.status(500).json({
-                        success: false,
-                        errorCode: errorsConstants.DevicesErrors.queryError,
-                        data: err,
-                        message: 'Error creating device history'
-                    });
-                })
             }
         });
     }

@@ -11,7 +11,8 @@ module.exports = Object.freeze({
     DevicesErrors: {
         missingFields: 2001,
         deviceNotFound: 2002,
-        queryError: 2003
+        queryError: 2003,
+        smsSendError: 2004
     },
     ContactsErrors: {
         missingFields: 3001,
