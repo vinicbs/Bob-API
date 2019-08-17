@@ -23,7 +23,12 @@ exports.up = function (db) {
 			primaryKey: true,
 			autoIncrement: true
 		},
-		name: {
+		first_name: {
+			type: 'string',
+			notNull: true,
+			length: 150
+		},
+		last_name: {
 			type: 'string',
 			notNull: true,
 			length: 150

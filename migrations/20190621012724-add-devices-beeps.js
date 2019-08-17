@@ -40,6 +40,11 @@ exports.up = function(db) {
 				}
 			}
 		},
+		token: {
+			type: 'string',
+			notNull: true,
+			length: 150
+		},
 		pressed_button: {
 			type: 'int',
 			notNull: true,

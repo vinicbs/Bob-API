@@ -16,7 +16,8 @@ var DB = require('../db').DB,
     {
         email: string [required]
         password: string [required]
-        name: string [required]
+        first_name: string [required]
+        last_name: string [required]
         phone: string [required]
     }
 */
@@ -39,7 +40,8 @@ router.post('/signup', function (req, res, next) {
         var fields = '';
         fields += ((req.body.email == null) || (req.body.email == "")) ? 'email' : '';
         fields += ((req.body.password == null) || (req.body.password == "")) ? (fields.length > 0 ? ', ' : '') + 'password' : '';
-        fields += ((req.body.name == null) || (req.body.name == "")) ? (fields.length > 0 ? ', ' : '') + 'name' : '';
+        fields += ((req.body.first_name == null) || (req.body.first_name == "")) ? (fields.length > 0 ? ', ' : '') + 'first_name' : '';
+        fields += ((req.body.last_name == null) || (req.body.last_name == "")) ? (fields.length > 0 ? ', ' : '') + 'last_name' : '';
         fields += ((req.body.phone == null) || (req.body.phone == "")) ? (fields.length > 0 ? ', ' : '') + 'phone' : '';
         fields += ((req.body.country == null) || (req.body.country == "")) ? (fields.length > 0 ? ', ' : '') + 'country' : '';
 
@@ -48,6 +50,13 @@ router.post('/signup', function (req, res, next) {
             errorCode: errorsConstants.LoginErrors.missingFields,
             data: null,
             message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else if  (req.body.first_name.length > 15) {
+        res.json({
+            success: false,
+            errorCode: errorsConstants.LoginErrors.missingFields,
+            data: null,
+            message: 'Nome muito longo'
         });
     }
     else {
@@ -67,7 +76,8 @@ router.post('/signup', function (req, res, next) {
                     .returning('id').insert({
                         email: req.body.email,
                         password: CryptoJS.AES.encrypt(req.body.password, process.env.PASSWORD_KEY).toString(),
-                        name: req.body.name,
+                        first_name: req.body.first_name,
+                        last_name: req.body.last_name,
                         phone: req.body.phone,
                         country: req.body.country
                     }).then(id => {
@@ -114,7 +124,8 @@ router.post('/signup', function (req, res, next) {
                 token,
                 id,
                 email,
-                name,
+                first_name,
+                last_name,
                 phone
             }
         Error:
@@ -153,7 +164,8 @@ router.get('/signin', function (req, res, next) {
                         token: token,
                         id: result.id,
                         email: result.email,
-                        name: result.name,
+                        first_name: result.first_name,
+                        last_name: result.last_name,
                         phone: result.phone
                     }
                     res.json({

@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var crypto = require('crypto');
 var errorsConstants = require('../utils/errorsConstants')
 var useful = require('../utils/useful')
 let zenvia = require("zenvia-api").sendOne;
@@ -456,7 +457,7 @@ router.post('/beep', function (req, res, next) {
             message: 'Required fields have not been entered. Fields: ' + fields
         });
     } else {
-        var query = knex('devices').select('id')
+        var query = knex('devices').select('id', 'user_id')
             .where('imei', '=', req.body.imei)
             .limit(1);
         query.then(function (results) {
@@ -468,57 +469,93 @@ router.post('/beep', function (req, res, next) {
                     message: 'Device not found'
                 });
             } else {
-                var timezone = (((req.body.timezone == null) || (req.body.timezone == "")) ? 0 : req.body.timezone);
-                var height = (((req.body.height == null) || (req.body.height == "")) ? "" : req.body.height);
-                var direction = (((req.body.direction == null) || (req.body.direction == "")) ? "" : req.body.direction);
-                var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
-                var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
-                var pressed_button = (((req.body.pressed_button == null) || (req.body.pressed_button == "")) ? 0 : req.body.pressed_button);
+                var queryUser = knex('users').select('first_name')
+                    .where('id', '=', results[0].user_id).limit(1).then(function (user) {
+                        var user_name = user[0].first_name
+                        var timezone = (((req.body.timezone == null) || (req.body.timezone == "")) ? 0 : req.body.timezone);
+                        var height = (((req.body.height == null) || (req.body.height == "")) ? "" : req.body.height);
+                        var direction = (((req.body.direction == null) || (req.body.direction == "")) ? "" : req.body.direction);
+                        var speed = (((req.body.speed == null) || (req.body.speed == "")) ? "" : req.body.speed);
+                        var number_satellites = (((req.body.number_satellites == null) || (req.body.number_satellites == "")) ? 0 : req.body.number_satellites);
+                        var pressed_button = (((req.body.pressed_button == null) || (req.body.pressed_button == "")) ? 0 : req.body.pressed_button);
+                        var beep_token = '';
 
-                knex('contacts').select('*')
-                    .where('device_id', '=', results[0].id)
-                    .then(function (contacts) {
-                        if (pressed_button == 1) {
-                            contacts.forEach(contact => {
-                                let body = {
-                                    "from": "Botão do Bem",
-                                    "to": contact.phone,
-                                    "msg": "Olá, " + contact.name + ", estou em perigo: \n https://bob-web-stag.herokuapp.com/ \n" + contact.message,
-                                    "callbackOption": "NONE",
-                                };
-                                zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
-                                    .then((smsResponse) => {
-                                        console.log(smsResponse);
+                        knex('contacts').select('*')
+                            .where('device_id', '=', results[0].id)
+                            .then(function (contacts) {
+
+                                if (pressed_button == 1) {
+                                    crypto.randomBytes(6, function (err, buffer) {
+                                        beep_token = buffer.toString('hex');
+                                        contacts.forEach(contact => {
+                                            let body = {
+                                                "from": "Botão do Bem",
+                                                "to": contact.phone,
+                                                "msg": "Botão do Bem: \nAqui é o " + user_name +
+                                                    "\nAcesse: https://bob-web-stag.herokuapp.com/help?beep=" + beep_token +
+                                                    "\n",
+                                                "callbackOption": "NONE",
+                                            };
+                                            console.log(body.msg)
+                                            // zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
+                                            //     .then((smsResponse) => {
+                                            //         console.log(smsResponse);
+                                            //     })
+                                            //     .catch((err) => {
+                                            //         console.error(err);
+                                            //     });
+                                        });
+                                        knex.insert({
+                                            device_id: results[0].id, token: beep_token, latitude: req.body.latitude, longitude: req.body.longitude,
+                                            timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites,
+                                            pressed_button: pressed_button
+                                        }).returning('id').into('devices_beeps').then(function (id) {
+                                            res.json({
+                                                success: true,
+                                                errorCode: errorsConstants.noError,
+                                                data: id[0],
+                                                message: 'Beep'
+                                            });
+                                        }).catch(function (err) {
+                                            res.status(500).json({
+                                                success: false,
+                                                errorCode: errorsConstants.DevicesErrors.queryError,
+                                                data: err,
+                                                message: 'Error creating device beep'
+                                            });
+                                        })
                                     })
-                                    .catch((err) => {
-                                        console.error(err);
-                                    });
-                            });
-                        }
-                        knex.insert({
-                            device_id: results[0].id, latitude: req.body.latitude, longitude: req.body.longitude,
-                            timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites,
-                            pressed_button: pressed_button
-                        }).returning('id').into('devices_beeps').then(function (id) {
-                            res.json({
-                                success: true,
-                                errorCode: errorsConstants.noError,
-                                data: id[0],
-                                message: 'Beep'
-                            });
-                        }).catch(function (err) {
-                            res.status(500).json({
-                                success: false,
-                                errorCode: errorsConstants.DevicesErrors.queryError,
-                                data: err,
-                                message: 'Error creating device beep'
-                            });
-                        })
+                                } else {
+                                    // Because function is not asyncronus, the code must be duplicated
+                                    knex.insert({
+                                        device_id: results[0].id, token: '', latitude: req.body.latitude, longitude: req.body.longitude,
+                                        timezone: timezone, height: height, direction: direction, speed: speed, number_satellites: number_satellites,
+                                        pressed_button: pressed_button
+                                    }).returning('id').into('devices_beeps').then(function (id) {
+                                        res.json({
+                                            success: true,
+                                            errorCode: errorsConstants.noError,
+                                            data: id[0],
+                                            message: 'Beep'
+                                        });
+                                    }).catch(function (err) {
+                                        res.status(500).json({
+                                            success: false,
+                                            errorCode: errorsConstants.DevicesErrors.queryError,
+                                            data: err,
+                                            message: 'Error creating device beep'
+                                        });
+                                    })
+                                }
+                            })
                     })
+
+
             }
         });
     }
 })
+
 // URL: /devices/beep/list
 // Method: GET
 // URL Params: [pageSize, page, imei]
@@ -616,6 +653,112 @@ router.get('/beep/list', validToken, function (req, res, next) {
         });
     }
 });
+
+
+// URL: /devices/beep/last
+// Method: GET
+// URL Params: [token, device]
+/*  Response:
+        Success:
+            data: last devices_beeps object
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Device not found:   { errorCode: 2002 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.get('/beep/help/last', function (req, res, next) {
+    if (req.query.token == null) {
+        var fields = '';
+        fields += ((req.query.token == null) || (req.query.token == "")) ? 'token' : '';
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.DevicesErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else {
+        var queryBeep = knex('devices_beeps').select('created_at')
+            .where('token', '=', req.query.token)
+            .limit(1);
+        queryBeep.then(function (device_beep) {
+            if (device_beep.length === 0) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.DevicesErrors.beepNotFound,
+                    data: null,
+                    message: 'Device beep not found'
+                });
+            } else {
+                var beepTime = new Date(device_beep[0].created_at);
+                var maxTime = new Date(device_beep[0].created_at.setHours(device_beep[0].created_at.getHours() + 3));
+                var queryBeeps = knex('devices_beeps').select('*')
+                    .where('created_at', '>=', beepTime).andWhere('created_at', '<', maxTime).orderBy('created_at', 'desc').limit(1);
+                queryBeeps.then(function (device_beeps) {
+                    res.json({
+                        success: true,
+                        errorCode: errorsConstants.noError,
+                        data: device_beeps[0],
+                        message: 'Return OK.'
+                    });
+                })
+            }
+        })
+    }
+});
+
+// URL: /devices/beep/help
+// Method: GET
+// URL Params: [token]
+/*  Response:
+        Success:
+            data: array list of devices_beeps objects
+        Error:
+            Missing fields:     { errorCode: 2001 }
+            Device not found:   { errorCode: 2002 }
+            Error in query:     { errorCode: 2003 }
+*/
+router.get('/beep/help', function (req, res, next) {
+    if (req.query.token == null) {
+        var fields = '';
+        fields += ((req.query.token == null) || (req.query.token == "")) ? 'token' : '';
+        res.status(500).json({
+            success: false,
+            errorCode: errorsConstants.DevicesErrors.missingFields,
+            data: null,
+            message: 'Required fields have not been entered. Fields: ' + fields
+        });
+    } else {
+        var queryBeep = knex('devices_beeps').select('created_at')
+            .where('token', '=', req.query.token)
+            .limit(1);
+        queryBeep.then(function (device_beep) {
+            if (device_beep.length === 0) {
+                res.json({
+                    success: false,
+                    errorCode: errorsConstants.DevicesErrors.beepNotFound,
+                    data: null,
+                    message: 'Device beep not found'
+                });
+            } else {
+                var beepTime = new Date(device_beep[0].created_at);
+                var maxTime = new Date(device_beep[0].created_at.setHours(device_beep[0].created_at.getHours() + 3));
+                var queryBeeps = knex('devices_beeps').select('*')
+                    .where('created_at', '>=', beepTime).andWhere('created_at', '<', maxTime).orderBy('created_at', 'asc');
+                queryBeeps.then(function (device_beeps) {
+                    res.json({
+                        success: true,
+                        errorCode: errorsConstants.noError,
+                        data: device_beeps,
+                        message: 'Return OK.'
+                    });
+                })
+            }
+        })
+    }
+})
+
+
+
 
 module.exports = router;
 
