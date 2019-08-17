@@ -491,19 +491,18 @@ router.post('/beep', function (req, res, next) {
                                             let body = {
                                                 "from": "Botão do Bem",
                                                 "to": contact.phone,
-                                                "msg": "Botão do Bem: \nAqui é o " + user_name +
+                                                "msg": "Botão do Bem: \nAqui é " + user_name +
                                                     "\nAcesse: https://bob-web-stag.herokuapp.com/help?beep=" + beep_token +
                                                     "\n",
                                                 "callbackOption": "NONE",
                                             };
-                                            console.log(body.msg)
-                                            // zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
-                                            //     .then((smsResponse) => {
-                                            //         console.log(smsResponse);
-                                            //     })
-                                            //     .catch((err) => {
-                                            //         console.error(err);
-                                            //     });
+                                            zenvia(process.env.ZENVIA_ACCOUNT, process.env.ZENVIA_PASS, body)
+                                                .then((smsResponse) => {
+                                                    console.log(smsResponse);
+                                                })
+                                                .catch((err) => {
+                                                    console.error(err);
+                                                });
                                         });
                                         knex.insert({
                                             device_id: results[0].id, token: beep_token, latitude: req.body.latitude, longitude: req.body.longitude,
