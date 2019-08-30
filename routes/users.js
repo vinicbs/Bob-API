@@ -35,7 +35,11 @@ var DB = require('../db').DB,
 // Token is not required
 router.post('/signup', function (req, res, next) {
     if ((req.body.email == null) || (req.body.email == "") ||
-        (req.body.password == null) || (req.body.password == "")) {
+        (req.body.password == null) || (req.body.password == "") ||
+        (req.body.first_name == null) || (req.body.first_name == "") ||
+        (req.body.last_name == null) || (req.body.last_name == "") ||
+        (req.body.phone == null) || (req.body.phone == "") ||
+        (req.body.country == null) || (req.body.country == "")) {
 
         var fields = '';
         fields += ((req.body.email == null) || (req.body.email == "")) ? 'email' : '';
@@ -56,7 +60,7 @@ router.post('/signup', function (req, res, next) {
             success: false,
             errorCode: errorsConstants.LoginErrors.missingFields,
             data: null,
-            message: 'Nome muito longo'
+            message: 'Name too long'
         });
     }
     else {
